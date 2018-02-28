@@ -13,7 +13,7 @@
         "electron-prebuilt": "^0.37.8"
     },
     "scripts": {
-        "test": "electron ./dist/index.js"
+        "start": "electron ./dist/index.js"
     },
     "author": "Tianyi Ma <tn.ma@outlook.com>",
     "license": "MIT"

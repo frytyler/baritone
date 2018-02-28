@@ -1,4 +1,4 @@
-process.env.HMR_PORT=58427;process.env.HMR_HOSTNAME="";// modules are defined as an array
+process.env.HMR_PORT=60673;process.env.HMR_HOSTNAME="";// modules are defined as an array
 // [ module function, map of requires ]
 //
 // map of requires is short require name -> numeric require
@@ -317,15 +317,11 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// const Menu = electron.Menu;
-// const BrowserWindow = electron.BrowserWindow;
 const mb = (0, _menubar2.default)({
     dir: __dirname + '/../',
     preloadWindow: true,
     height: 464
 });
-
-// const ipcMain = electron.ipcMain;
 
 let appLauncher = new _autoLaunch2.default({
     name: 'spotifymenubar'
@@ -376,7 +372,6 @@ appLauncher.isEnabled().then(enabled => {
 });
 
 contextMenu.items[3].checked = settings.showTrackTitle;
-//contextMenu.items[4].checked = settings.smallAlbumArt;
 
 function openSettings() {
     const settingsWindow = new _electron.BrowserWindow({ width: 400, height: 500 });
@@ -403,26 +398,16 @@ mb.on('after-create-window', () => {
     mb.window.webContents.send('settings', settings);
 });
 
-_electron.ipcMain.on('seek', (event, percent) => {
-    spotify.seek(percent);
-});
+_electron.ipcMain.on('seek', (event, percent) => spotify.seek(percent));
 
-_electron.ipcMain.on('playpause', (event, data) => {
-    spotify.playpause();
-});
+_electron.ipcMain.on('playpause', (event, data) => spotify.playpause());
 
-_electron.ipcMain.on('skip', (event, data) => {
-    spotify.skip(data);
-});
+_electron.ipcMain.on('skip', (event, data) => spotify.skip(data));
 
-_electron.ipcMain.on('shuffle', (event, data) => {
-    spotify.shuffle(data);
-});
+_electron.ipcMain.on('shuffle', (event, data) => spotify.shuffle(data));
 
-_electron.ipcMain.on('repeat', (event, data) => {
-    spotify.repeat(data);
-});
-},{"./spotify.js":2}],10:[function(require,module,exports) {
+_electron.ipcMain.on('repeat', (event, data) => spotify.repeat(data));
+},{"./spotify.js":2}],3:[function(require,module,exports) {
 var global = (1, eval)('this');
 var OldModule = module.bundle.Module;
 function Module(moduleName) {
@@ -545,5 +530,5 @@ function hmrAccept(bundle, id) {
   });
 }
 
-},{}]},{},[10,1])
+},{}]},{},[3,1])
 //# sourceMappingURL=/dist/index.map

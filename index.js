@@ -3,15 +3,11 @@ import electron, { ipcMain, Menu, BrowserWindow } from 'electron';
 import AutoLaunch from 'auto-launch';
 import * as spotify from './spotify.js';
 
-// const Menu = electron.Menu;
-// const BrowserWindow = electron.BrowserWindow;
 const mb = menubar({
     dir: __dirname + '/../',
     preloadWindow: true,
     height: 464,
 });
-
-// const ipcMain = electron.ipcMain;
 
 let appLauncher = new AutoLaunch({
     name: 'spotifymenubar',
@@ -69,7 +65,6 @@ appLauncher.isEnabled().then(enabled => {
 });
 
 contextMenu.items[3].checked = settings.showTrackTitle;
-//contextMenu.items[4].checked = settings.smallAlbumArt;
 
 function openSettings() {
     const settingsWindow = new BrowserWindow({ width: 400, height: 500 });
@@ -96,22 +91,12 @@ mb.on('after-create-window', () => {
     mb.window.webContents.send('settings', settings);
 });
 
-ipcMain.on('seek', (event, percent) => {
-    spotify.seek(percent);
-});
+ipcMain.on('seek', (event, percent) => spotify.seek(percent));
 
-ipcMain.on('playpause', (event, data) => {
-    spotify.playpause();
-});
+ipcMain.on('playpause', (event, data) => spotify.playpause());
 
-ipcMain.on('skip', (event, data) => {
-    spotify.skip(data);
-});
+ipcMain.on('skip', (event, data) => spotify.skip(data));
 
-ipcMain.on('shuffle', (event, data) => {
-    spotify.shuffle(data);
-});
+ipcMain.on('shuffle', (event, data) => spotify.shuffle(data));
 
-ipcMain.on('repeat', (event, data) => {
-    spotify.repeat(data);
-});
+ipcMain.on('repeat', (event, data) => spotify.repeat(data));
