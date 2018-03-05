@@ -4,16 +4,28 @@
     "description": "A Spotify controller that lives in the menubar.",
     "main": "./dist/index.js",
     "dependencies": {
+        "@fortawesome/fontawesome": "^1.1.4",
+        "@fortawesome/fontawesome-free-solid": "^5.0.7",
+        "@fortawesome/react-fontawesome": "^0.0.17",
         "auto-launch": "^2.0.1",
-        "font-awesome": "^4.6.1",
+        "babel-preset-react": "^6.24.1",
+        "electron-store": "^1.3.0",
+        "express": "^4.16.2",
         "menubar": "latest",
-        "request": "^2.83.0"
+        "querystring": "^0.2.0",
+        "react": "^16.2.0",
+        "react-dom": "^16.2.0",
+        "request": "^2.83.0",
+        "styled-components": "^3.1.6"
     },
     "devDependencies": {
+        "babel-core": "^6.26.0",
         "electron-prebuilt": "^0.37.8"
     },
     "scripts": {
-        "start": "electron ./dist/index.js"
+        "start": "electron .",
+        "watch:electron": "parcel watch index.js --target=electron",
+        "watch:node": "parcel watch main.js --target=node"
     },
     "author": "Tianyi Ma <tn.ma@outlook.com>",
     "license": "MIT"

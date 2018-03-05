@@ -1,4 +1,4 @@
-process.env.HMR_PORT=60673;process.env.HMR_HOSTNAME="";// modules are defined as an array
+process.env.HMR_PORT=55512;process.env.HMR_HOSTNAME="";// modules are defined as an array
 // [ module function, map of requires ]
 //
 // map of requires is short require name -> numeric require
@@ -71,13 +71,13 @@ require = (function (modules, cache, entry) {
 
   // Override the current require with this new one
   return newRequire;
-})({2:[function(require,module,exports) {
+})({3:[function(require,module,exports) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.init = exports.setWindow = exports.grabTokens = exports.getAlbumCover = exports.shuffle = exports.repeat = exports.skip = exports.playpause = exports.pause = exports.seek = exports.getCurrentAlbumId = exports.getStatus = exports.getJson = exports.getUrl = exports.generateUrl = exports.generateLocalHostname = undefined;
+exports.init = exports.setWindow = exports.grabTokens = exports.getAlbumCover = exports.shuffle = exports.repeat = exports.skip = exports.playpause = exports.pause = exports.seek = exports.getCurrentAlbumId2 = exports.getCurrentAlbumId = exports.getStatus = exports.getJson = exports.getUrl = exports.generateUrl = exports.generateLocalHostname = undefined;
 
 var _https = require('https');
 
@@ -89,7 +89,13 @@ var _request = require('request');
 
 var _request2 = _interopRequireDefault(_request);
 
+var _electronStore = require('electron-store');
+
+var _electronStore2 = _interopRequireDefault(_electronStore);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const store = new _electronStore2.default({ name: 'auth' });
 
 let spotifyPortOffset = 0;
 
@@ -155,6 +161,20 @@ const getStatus = exports.getStatus = function () {
 };
 
 const getCurrentAlbumId = exports.getCurrentAlbumId = () => {
+    const { access_token } = store.get('tokens');
+
+    const options = {
+        url: 'https://api.spotify.com/v1/me/player',
+        headers: { Authorization: 'Bearer ' + access_token },
+        json: true
+    };
+    _request2.default.get(options, (err, res, body) => {
+        if (body.error && body.error.status === 401) store.delete('tokens');
+        console.log({ body });
+    });
+};
+
+const getCurrentAlbumId2 = exports.getCurrentAlbumId2 = () => {
     const config = copyConfig({
         host: generateLocalHostname(),
         path: `/remote/status.json?oauth=${oauth}&csrf=${csrf}&returnafter=1returnon=${DEFAULT_RETURN_ON.join()}`
@@ -176,6 +196,22 @@ const getCurrentAlbumId = exports.getCurrentAlbumId = () => {
                 }
             }
             if (typeof mainWindow !== 'undefined') {
+                const { track } = data;
+
+                const trackInfo = {
+                    song: track.track_resource.name,
+                    album: track.album_resource.name,
+                    artist: track.artist_resource.name,
+                    time: {
+                        length: track.length / 60,
+                        current: Math.round(data.playing_position),
+                        remaining: parseFloat(track.length / 60).toFixed(2)
+                    }
+                };
+                // console.log(trackInfo);
+
+                mainWindow.webContents.send('trackInfo', trackInfo);
+
                 mainWindow.webContents.send('position', data.playing_position / data.track.length * 100);
                 mainWindow.webContents.send('length', data.track.length);
                 mainWindow.webContents.send('playing', data.playing);
@@ -294,8 +330,138 @@ const init = exports.init = function () {
         }
     }, 500);
 };
+},{}],12:[function(require,module,exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _express = require('express');
+
+var _querystring = require('querystring');
+
+var _querystring2 = _interopRequireDefault(_querystring);
+
+var _electron = require('electron');
+
+var _request = require('request');
+
+var _request2 = _interopRequireDefault(_request);
+
+var _electronStore = require('electron-store');
+
+var _electronStore2 = _interopRequireDefault(_electronStore);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const store = new _electronStore2.default({ name: 'auth' });
+const router = (0, _express.Router)();
+
+const stateKey = 'spotify_auth_state';
+const tokenStatekey = 'tokens';
+const client_id = 'dac3a81dc39d4871bed298674cbb19d9'; // Your client id
+const client_secret = 'd3c86d0a9bac494bad1069ac6ecedc2d'; // Your secret
+const redirect_uri = 'http://localhost:3000/callback'; // Your redirect uri
+let authWindow;
+
+const generateRandomString = function (length) {
+    var text = '';
+    var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    for (var i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+};
+
+router.get('/login', (req, res) => {
+    authWindow = new _electron.BrowserWindow({ width: 600, height: 700 });
+    const state = generateRandomString(16);
+    store.set(stateKey, state);
+
+    // your application requests authorization
+    var scope = 'user-read-private user-read-email playlist-read-private user-top-read user-library-read playlist-modify-private user-read-currently-playing user-read-recently-played user-follow-modify user-modify-playback-state user-read-playback-state user-follow-read user-library-modify streaming playlist-modify-public playlist-read-collaborative';
+    authWindow.loadURL('https://accounts.spotify.com/authorize?' + _querystring2.default.stringify({
+        response_type: 'code',
+        client_id,
+        scope,
+        redirect_uri,
+        state
+    }));
+});
+
+router.get('/callback', (req, res) => {
+    // your application requests refresh and access tokens
+    // after checking the state parameter
+
+    const { query: { code = null, state = null } } = req;
+    const storedState = store.get(stateKey) || null;
+
+    if (state === null || state !== storedState) {
+        // not sure what to do here.
+        // res.status(401).send('state_mismatch');
+    } else {
+        store.delete(stateKey);
+        var authOptions = {
+            url: 'https://accounts.spotify.com/api/token',
+            form: {
+                code,
+                redirect_uri,
+                grant_type: 'authorization_code'
+            },
+            headers: {
+                Authorization: 'Basic ' + new Buffer(client_id + ':' + client_secret).toString('base64')
+            },
+            json: true
+        };
+
+        _request2.default.post(authOptions, function (error, response, body) {
+            if (!error && response.statusCode === 200) {
+                const { access_token, refresh_token } = body;
+
+                store.set(tokenStatekey, { access_token, refresh_token });
+
+                var options = {
+                    url: 'https://api.spotify.com/v1/me',
+                    headers: { Authorization: 'Bearer ' + access_token },
+                    json: true
+                };
+
+                authWindow.close();
+
+                // use the access token to access the Spotify Web API
+                // request.get(options, function(error, response, body) {
+                //     console.log(body);
+                // });
+
+                // we can also pass the token to the browser to make requests from there
+                // res.redirect(
+                //     '/#' +
+                //         querystring.stringify({
+                //             access_token: access_token,
+                //             refresh_token: refresh_token,
+                //         })
+                // );
+            } else {
+                    // res.redirect(
+                    //     '/#' +
+                    //         querystring.stringify({
+                    //             error: 'invalid_token',
+                    //         })
+                    // );
+                }
+        });
+    }
+});
+
+exports.default = router;
 },{}],1:[function(require,module,exports) {
 'use strict';
+
+var _express = require('express');
+
+var _express2 = _interopRequireDefault(_express);
 
 var _menubar = require('menubar');
 
@@ -313,14 +479,22 @@ var _spotify = require('./spotify.js');
 
 var spotify = _interopRequireWildcard(_spotify);
 
+var _authenticate = require('./authenticate');
+
+var _authenticate2 = _interopRequireDefault(_authenticate);
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+const app = (0, _express2.default)();
+
+app.use('/', _authenticate2.default);
+
 const mb = (0, _menubar2.default)({
     dir: __dirname + '/../',
     preloadWindow: true,
-    height: 464
+    height: 550
 });
 
 let appLauncher = new _autoLaunch2.default({
@@ -395,6 +569,7 @@ mb.on('ready', () => {
 
 mb.on('after-create-window', () => {
     spotify.setWindow(mb.window);
+    mb.window.openDevTools();
     mb.window.webContents.send('settings', settings);
 });
 
@@ -407,7 +582,10 @@ _electron.ipcMain.on('skip', (event, data) => spotify.skip(data));
 _electron.ipcMain.on('shuffle', (event, data) => spotify.shuffle(data));
 
 _electron.ipcMain.on('repeat', (event, data) => spotify.repeat(data));
-},{"./spotify.js":2}],3:[function(require,module,exports) {
+
+console.log('Listing to http://localhost:3000');
+app.listen(3000);
+},{"./spotify.js":3,"./authenticate":12}],14:[function(require,module,exports) {
 var global = (1, eval)('this');
 var OldModule = module.bundle.Module;
 function Module(moduleName) {
@@ -530,5 +708,5 @@ function hmrAccept(bundle, id) {
   });
 }
 
-},{}]},{},[3,1])
+},{}]},{},[14,1])
 //# sourceMappingURL=/dist/index.map

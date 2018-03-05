@@ -1,12 +1,19 @@
+import express from 'express';
 import menubar from 'menubar';
 import electron, { ipcMain, Menu, BrowserWindow } from 'electron';
 import AutoLaunch from 'auto-launch';
+
 import * as spotify from './spotify.js';
+import authentication from './authenticate';
+
+const app = express();
+
+app.use('/', authentication);
 
 const mb = menubar({
     dir: __dirname + '/../',
     preloadWindow: true,
-    height: 464,
+    height: 550,
 });
 
 let appLauncher = new AutoLaunch({
@@ -88,6 +95,7 @@ mb.on('ready', () => {
 
 mb.on('after-create-window', () => {
     spotify.setWindow(mb.window);
+    mb.window.openDevTools();
     mb.window.webContents.send('settings', settings);
 });
 
@@ -100,3 +108,6 @@ ipcMain.on('skip', (event, data) => spotify.skip(data));
 ipcMain.on('shuffle', (event, data) => spotify.shuffle(data));
 
 ipcMain.on('repeat', (event, data) => spotify.repeat(data));
+
+console.log('Listing to http://localhost:3000');
+app.listen(3000);

@@ -8,6 +8,7 @@ After cloning the repo you will need to make sure Parcel is install Globally. [(
 ```
 $ npm install
 $ parcel watch index.js --target=electron
+$ parcel watch main.js --target=node
 ```
 
 Then run application with:

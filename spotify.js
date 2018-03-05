@@ -1,6 +1,9 @@
 import https from 'https';
 import { exec } from 'child_process';
 import request from 'request';
+import Store from 'electron-store';
+
+const store = new Store({ name: 'auth' });
 
 let spotifyPortOffset = 0;
 
@@ -68,6 +71,20 @@ export const getStatus = function() {
 };
 
 export const getCurrentAlbumId = () => {
+    const { access_token } = store.get('tokens');
+
+    const options = {
+        url: 'https://api.spotify.com/v1/me/player',
+        headers: { Authorization: 'Bearer ' + access_token },
+        json: true,
+    };
+    request.get(options, (err, res, body) => {
+        if (body.error && body.error.status === 401) store.delete('tokens');
+        console.log({ body });
+    });
+};
+
+export const getCurrentAlbumId2 = () => {
     const config = copyConfig({
         host: generateLocalHostname(),
         path: `/remote/status.json?oauth=${oauth}&csrf=${csrf}&returnafter=1returnon=${DEFAULT_RETURN_ON.join()}`,
@@ -89,6 +106,22 @@ export const getCurrentAlbumId = () => {
                 }
             }
             if (typeof mainWindow !== 'undefined') {
+                const { track } = data;
+
+                const trackInfo = {
+                    song: track.track_resource.name,
+                    album: track.album_resource.name,
+                    artist: track.artist_resource.name,
+                    time: {
+                        length: track.length / 60,
+                        current: Math.round(data.playing_position),
+                        remaining: parseFloat(track.length / 60).toFixed(2),
+                    },
+                };
+                // console.log(trackInfo);
+
+                mainWindow.webContents.send('trackInfo', trackInfo);
+
                 mainWindow.webContents.send(
                     'position',
                     data.playing_position / data.track.length * 100
